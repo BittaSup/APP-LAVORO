@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cartellino — Orario di lavoro</title>
+<style>
+  :root{
+    --bg:#1B1A17;
+    --card:#242220;
+    --card-2:#2B2926;
+    --amber:#D9A441;
+    --amber-dim:#7A5A24;
+    --rust:#A8493B;
+    --rust-dim:#5C2A22;
+    --text:#F2EEE6;
+    --text-2:#9C978C;
+    --text-3:#6E6A61;
+    --divider:#38352F;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  body{
+    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:24px 16px 60px;
+  }
+  .app{width:100%; max-width:420px;}
+
+  .clockcard{
+    background:var(--card);
+    border-radius:20px;
+    padding:22px 20px 20px;
+    position:relative;
+    overflow:hidden;
+    margin-bottom:16px;
+  }
+  .notches{
+    display:flex;
+    justify-content:space-between;
+    padding:0 2px 16px;
+  }
+  .notches span{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--bg);
+  }
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--text-3);
+    margin:0 0 6px;
+    text-align:center;
+  }
+  .bigclock{
+    font-family:ui-monospace, "SF Mono", Menlo, monospace;
+    font-size:44px;
+    font-weight:600;
+    text-align:center;
+    color:var(--amber);
+    letter-spacing:1px;
+    margin:0;
+    font-variant-numeric:tabular-nums;
+  }
+  .datestr{
+    text-align:center;
+    color:var(--text-2);
+    font-size:14px;
+    margin:4px 0 18px;
+    text-transform:capitalize;
+  }
+  .status{
+    text-align:center;
+    font-size:14px;
+    color:var(--text-2);
+    background:var(--card-2);
+    border-radius:12px;
+    padding:10px 14px;
+    margin-bottom:16px;
+    min-height:20px;
+  }
+  .status.working{ color:var(--amber); }
+  .status b{ color:inherit; font-weight:600; }
+
+  .btnrow{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  .btn{
+    border:none;
+    border-radius:14px;
+    padding:18px 0;
+    font-size:17px;
+    font-weight:600;
+    letter-spacing:0.5px;
+    color:var(--bg);
+    cursor:pointer;
+    transition:transform .08s ease, opacity .15s ease;
+  }
+  .btn:active{ transform:scale(0.97); }
+  .btn:disabled{ opacity:0.35; cursor:default; transform:none; }
+  .btn-start{ background:var(--amber); }
+  .btn-end{ background:var(--rust); color:#F2EEE6; }
+
+  .section{
+    background:var(--card);
+    border-radius:16px;
+    padding:16px 18px 6px;
+    margin-bottom:16px;
+  }
+  .section h2{
+    font-size:13px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    color:var(--text-3);
+    margin:0 0 10px;
+    font-weight:600;
+  }
+  .entry{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 0;
+    border-top:1px solid var(--divider);
+    font-size:14px;
+  }
+  .entry:first-of-type{ border-top:none; }
+  .entry .times{ color:var(--text); font-family:ui-monospace, "SF Mono", Menlo, monospace; }
+  .entry .times .arrow{ color:var(--text-3); margin:0 6px; }
+  .entry .dur{ color:var(--text-2); font-weight:600; min-width:64px; text-align:right; }
+  .entry .del{
+    background:none; border:none; color:var(--text-3);
+    font-size:16px; padding:2px 6px; margin-left:8px; cursor:pointer;
+  }
+  .entry .del:active{ color:var(--rust); }
+  .entry.ongoing .dur{ color:var(--amber); }
+  .empty{
+    color:var(--text-3);
+    font-size:13px;
+    padding:14px 0;
+    text-align:center;
+  }
+
+  .monthbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:4px;
+  }
+  .monthbar .mnav{
+    background:var(--card-2);
+    border:none;
+    color:var(--text);
+    width:30px;height:30px;
+    border-radius:8px;
+    font-size:16px;
+    cursor:pointer;
+  }
+  .monthbar .mtitle{
+    font-size:14px;
+    font-weight:600;
+    text-transform:capitalize;
+    color:var(--text);
+  }
+  .monthtotal{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:14px 0 16px;
+  }
+  .monthtotal .label{ font-size:13px; color:var(--text-2); }
+  .monthtotal .value{
+    font-family:ui-monospace, "SF Mono", Menlo, monospace;
+    font-size:26px;
+    font-weight:600;
+    color:var(--amber);
+  }
+
+  .daygroup{
+    padding:8px 0 2px;
+    border-top:1px solid var(--divider);
+  }
+  .daygroup:first-of-type{ border-top:none; }
+  .dayhead{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    color:var(--text-2);
+    padding:4px 0 2px;
+    text-transform:capitalize;
+  }
+  .dayhead .daytotal{ color:var(--text); font-weight:600; }
+
+  .footnote{
+    text-align:center;
+    color:var(--text-3);
+    font-size:12px;
+    margin-top:6px;
+    line-height:1.5;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="clockcard">
+    <div class="notches">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <p class="eyebrow">Ora attuale</p>
+    <p class="bigclock" id="liveclock">--:--:--</p>
+    <p class="datestr" id="livedate">-</p>
+
+    <div class="status" id="status">Caricamento…</div>
+
+    <div class="btnrow">
+      <button class="btn btn-start" id="btnStart">Inizio</button>
+      <button class="btn btn-end" id="btnEnd">Fine</button>
+    </div>
+  </div>
+
+  <button id="addManualBtn" style="width:100%; background:var(--card); border:1px dashed var(--divider); color:var(--text-2); padding:14px 0; border-radius:14px; font-size:14px; cursor:pointer; margin-bottom:16px;">+ Aggiungi orario manuale</button>
+
+  <div class="section">
+    <h2>Oggi</h2>
+    <div id="todayList"></div>
+  </div>
+
+  <div class="section">
+    <div class="monthbar">
+      <button class="mnav" id="prevMonth">‹</button>
+      <span class="mtitle" id="monthTitle">-</span>
+      <button class="mnav" id="nextMonth">›</button>
+    </div>
+    <div class="monthtotal">
+      <span class="label">Totale ore del mese</span>
+      <span class="value" id="monthTotal">0h 00m</span>
+    </div>
+    <div id="monthDays"></div>
+  </div>
+
+  <p class="footnote">I dati restano salvati su questo dispositivo/account.<br>Aggiungi questa pagina alla schermata Home per aprirla come un'app.</p>
+
+</div>
+
+<div id="entryModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:1000; align-items:flex-end; justify-content:center;">
+  <div style="background:var(--card); width:100%; max-width:420px; border-radius:20px 20px 0 0; padding:20px 20px 28px;">
+    <h3 id="modalTitle" style="margin:0 0 16px; font-size:16px; font-weight:600; color:var(--text);">Aggiungi orario</h3>
+    <label style="display:block; font-size:13px; color:var(--text-2); margin-bottom:4px;">Giorno</label>
+    <input type="date" id="modalDate" style="width:100%; padding:10px; border-radius:10px; border:1px solid var(--divider); background:var(--card-2); color:var(--text); font-size:15px; margin-bottom:14px;">
+    <div style="display:flex; gap:12px; margin-bottom:18px;">
+      <div style="flex:1;">
+        <label style="display:block; font-size:13px; color:var(--text-2); margin-bottom:4px;">Inizio</label>
+        <input type="time" id="modalStart" style="width:100%; padding:10px; border-radius:10px; border:1px solid var(--divider); background:var(--card-2); color:var(--text); font-size:15px;">
+      </div>
+      <div id="modalEndWrap" style="flex:1;">
+        <label style="display:block; font-size:13px; color:var(--text-2); margin-bottom:4px;">Fine</label>
+        <input type="time" id="modalEnd" style="width:100%; padding:10px; border-radius:10px; border:1px solid var(--divider); background:var(--card-2); color:var(--text); font-size:15px;">
+      </div>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button id="modalDelete" onclick="__deleteFromModal()" style="display:none; flex:1; background:var(--rust-dim); color:var(--text); border:none; padding:13px 0; border-radius:12px; font-size:15px; cursor:pointer;">Elimina</button>
+      <button onclick="__closeModal()" style="flex:1; background:var(--card-2); color:var(--text); border:none; padding:13px 0; border-radius:12px; font-size:15px; cursor:pointer;">Annulla</button>
+      <button onclick="__saveModal()" style="flex:1; background:var(--amber); color:var(--bg); border:none; padding:13px 0; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer;">Salva</button>
+    </div>
+  </div>
+</div>
+
+<div id="actionOverlay" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:999; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;">
+  <div id="actionIcon" style="width:64px;height:64px;border-radius:50%;background:var(--amber);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;margin-bottom:20px;">✓</div>
+  <p class="action-msg" style="font-size:18px; color:var(--text); max-width:300px; margin:0 0 24px; line-height:1.5;"></p>
+  <button onclick="document.getElementById('actionOverlay').style.display='none';" style="background:var(--card-2); border:none; color:var(--text); padding:12px 22px; border-radius:12px; font-size:15px; cursor:pointer;">Apri l'app completa</button>
+</div>
+
+
+<script>
+(function(){
+  var ENTRIES_KEY = 'work-entries';
+  var SESSION_KEY = 'work-session';
+
+  var entries = [];
+  var session = null;
+  var viewYear, viewMonth;
+
+  var now = new Date();
+  viewYear = now.getFullYear();
+  viewMonth = now.getMonth();
+
+  function pad(n){ return n < 10 ? '0'+n : ''+n; }
+  function dateKey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function timeStr(d){ return pad(d.getHours())+':'+pad(d.getMinutes()); }
+  function formatDuration(sec){
+    if(sec < 0) sec = 0;
+    var h = Math.floor(sec/3600);
+    var m = Math.floor((sec%3600)/60);
+    return h+'h '+pad(m)+'m';
+  }
+  function uid(){ return 'e'+Date.now()+Math.floor(Math.random()*1000); }
+
+  function roundTime(date){
+    var d = new Date(date);
+    var h = d.getHours();
+    var m = d.getMinutes();
+    if(m < 30){
+      m = (m <= 10) ? 0 : 30;
+    } else {
+      var diff = m - 30;
+      if(diff <= 10){ m = 30; } else { h = h + 1; m = 0; }
+    }
+    d.setHours(h, m, 0, 0);
+    return d;
+  }
+
+  async function loadData(){
+    try{
+      var r = localStorage.getItem(ENTRIES_KEY);
+      entries = r ? JSON.parse(r) : [];
+    }catch(e){ entries = []; }
+    try{
+      var s = localStorage.getItem(SESSION_KEY);
+      session = s ? JSON.parse(s) : null;
+    }catch(e){ session = null; }
+  }
+
+  async function saveEntries(){
+    try{ localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries)); }
+    catch(e){ console.error('Errore salvataggio', e); }
+  }
+  async function saveSession(){
+    try{
+      if(session){ localStorage.setItem(SESSION_KEY, JSON.stringify(session)); }
+      else { localStorage.removeItem(SESSION_KEY); }
+    }catch(e){ console.error('Errore salvataggio sessione', e); }
+  }
+
+  async function startWork(){
+    if(session) return;
+    var rounded = roundTime(new Date());
+    session = { start: rounded.toISOString() };
+    await saveSession();
+    render();
+  }
+
+  async function endWork(){
+    if(!session) return;
+    var start = new Date(session.start);
+    var end = roundTime(new Date());
+    var durationSec = Math.round((end - start)/1000);
+    entries.push({
+      id: uid(),
+      date: dateKey(start),
+      start: start.toISOString(),
+      end: end.toISOString(),
+      duration: durationSec
+    });
+    session = null;
+    await saveEntries();
+    await saveSession();
+    render();
+  }
+
+  async function deleteEntry(id){
+    entries = entries.filter(function(e){ return e.id !== id; });
+    await saveEntries();
+    render();
+  }
+  window.__deleteEntry = deleteEntry;
+
+  var editingId = null;
+
+  function openEntryModal(id){
+    editingId = id || null;
+    var modal = document.getElementById('entryModal');
+    var dateInput = document.getElementById('modalDate');
+    var startInput = document.getElementById('modalStart');
+    var endInput = document.getElementById('modalEnd');
+    var endWrap = document.getElementById('modalEndWrap');
+    var deleteBtn = document.getElementById('modalDelete');
+    var title = document.getElementById('modalTitle');
+
+    endWrap.style.display = '';
+
+    if(id === 'SESSION'){
+      title.textContent = 'Modifica orario di inizio';
+      dateInput.value = dateKey(new Date(session.start));
+      startInput.value = timeStr(new Date(session.start));
+      endWrap.style.display = 'none';
+      deleteBtn.style.display = 'none';
+    } else if(id){
+      var e = entries.find(function(x){ return x.id === id; });
+      if(!e) return;
+      title.textContent = 'Modifica orario';
+      dateInput.value = e.date;
+      startInput.value = timeStr(new Date(e.start));
+      endInput.value = timeStr(new Date(e.end));
+      deleteBtn.style.display = 'block';
+    } else {
+      title.textContent = 'Aggiungi orario';
+      dateInput.value = dateKey(new Date());
+      startInput.value = '';
+      endInput.value = '';
+      deleteBtn.style.display = 'none';
+    }
+    modal.style.display = 'flex';
+  }
+
+  function closeModal(){
+    document.getElementById('entryModal').style.display = 'none';
+    editingId = null;
+  }
+
+  async function saveModal(){
+    var dateVal = document.getElementById('modalDate').value;
+    var startVal = document.getElementById('modalStart').value;
+
+    if(editingId === 'SESSION'){
+      if(!dateVal || !startVal){ alert('Compila giorno e orario di inizio.'); return; }
+      var newStart = new Date(dateVal+'T'+startVal+':00');
+      session.start = newStart.toISOString();
+      await saveSession();
+      closeModal();
+      render();
+      return;
+    }
+
+    var endVal = document.getElementById('modalEnd').value;
+    if(!dateVal || !startVal || !endVal){
+      alert('Compila giorno, inizio e fine.');
+      return;
+    }
+    var start = new Date(dateVal+'T'+startVal+':00');
+    var end = new Date(dateVal+'T'+endVal+':00');
+    if(end <= start){ end.setDate(end.getDate()+1); }
+    var durationSec = Math.round((end-start)/1000);
+
+    if(editingId){
+      var idx = entries.findIndex(function(x){ return x.id === editingId; });
+      if(idx > -1){
+        entries[idx] = { id: editingId, date: dateVal, start: start.toISOString(), end: end.toISOString(), duration: durationSec };
+      }
+    } else {
+      entries.push({ id: uid(), date: dateVal, start: start.toISOString(), end: end.toISOString(), duration: durationSec });
+    }
+    await saveEntries();
+    closeModal();
+    render();
+  }
+
+  async function deleteFromModal(){
+    if(editingId && editingId !== 'SESSION'){
+      await deleteEntry(editingId);
+    }
+    closeModal();
+  }
+
+  window.__openModal = openEntryModal;
+  window.__closeModal = closeModal;
+  window.__saveModal = saveModal;
+  window.__deleteFromModal = deleteFromModal;
+
+  async function handleQuickAction(action){
+    var overlay = document.getElementById('actionOverlay');
+    var msg = '';
+    if(action === 'inizio'){
+      if(session){
+        msg = 'Sei già al lavoro dalle '+timeStr(new Date(session.start))+'.';
+      } else {
+        await startWork();
+        msg = 'Registrato inizio alle '+timeStr(new Date(session.start))+'.';
+      }
+    } else if(action === 'fine'){
+      if(!session){
+        msg = 'Non risulti al lavoro in questo momento.';
+      } else {
+        await endWork();
+        var last = entries[entries.length-1];
+        msg = 'Registrata uscita alle '+timeStr(new Date(last.end))+' · '+formatDuration(last.duration)+'.';
+      }
+    }
+    overlay.querySelector('.action-msg').textContent = msg;
+    overlay.style.display = 'flex';
+  }
+
+  function tickClock(){
+    var d = new Date();
+    document.getElementById('liveclock').textContent =
+      pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+    document.getElementById('livedate').textContent =
+      d.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+    var statusEl = document.getElementById('status');
+    if(session){
+      var start = new Date(session.start);
+      var elapsed = Math.floor((d - start)/1000);
+      statusEl.className = 'status working';
+      statusEl.innerHTML = 'Al lavoro dalle <b>'+timeStr(start)+'</b> · '+formatDuration(elapsed)+' in corso';
+    } else {
+      statusEl.className = 'status';
+      statusEl.textContent = 'Non in servizio';
+    }
+
+    document.getElementById('btnStart').disabled = !!session;
+    document.getElementById('btnEnd').disabled = !session;
+
+    if(session){
+      var ongoingRow = document.getElementById('ongoingRow');
+      if(ongoingRow){
+        var elapsed2 = Math.floor((d - new Date(session.start))/1000);
+        var durEl = ongoingRow.querySelector('.dur');
+        if(durEl) durEl.textContent = formatDuration(elapsed2);
+      }
+    }
+  }
+
+  function renderToday(){
+    var todayKey = dateKey(new Date());
+    var todays = entries.filter(function(e){ return e.date === todayKey; });
+    todays.sort(function(a,b){ return new Date(a.start) - new Date(b.start); });
+
+    var html = '';
+    todays.forEach(function(e){
+      html += '<div class="entry" onclick="__openModal(\''+e.id+'\')" style="cursor:pointer;">' +
+        '<span class="times">'+timeStr(new Date(e.start))+'<span class="arrow">→</span>'+timeStr(new Date(e.end))+'</span>' +
+        '<span class="dur">'+formatDuration(e.duration)+'</span>' +
+        '<button class="del" onclick="event.stopPropagation(); __deleteEntry(\''+e.id+'\')" aria-label="Elimina">×</button>' +
+        '</div>';
+    });
+
+    if(session && dateKey(new Date(session.start)) === todayKey){
+      html += '<div class="entry ongoing" id="ongoingRow" onclick="__openModal(\'SESSION\')" style="cursor:pointer;">' +
+        '<span class="times">'+timeStr(new Date(session.start))+'<span class="arrow">→</span>in corso</span>' +
+        '<span class="dur">0h 00m</span>' +
+        '<span style="width:24px;"></span>' +
+        '</div>';
+    }
+
+    if(!html){ html = '<div class="empty">Ancora nessuna registrazione oggi.</div>'; }
+    document.getElementById('todayList').innerHTML = html;
+  }
+
+  function renderMonth(){
+    var mtitle = new Date(viewYear, viewMonth, 1).toLocaleDateString('it-IT', { month:'long', year:'numeric' });
+    document.getElementById('monthTitle').textContent = mtitle;
+
+    var inMonth = entries.filter(function(e){
+      var d = new Date(e.date+'T00:00:00');
+      return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
+    });
+
+    var totalSec = inMonth.reduce(function(acc,e){ return acc + e.duration; }, 0);
+    document.getElementById('monthTotal').textContent = formatDuration(totalSec);
+
+    var byDay = {};
+    inMonth.forEach(function(e){
+      if(!byDay[e.date]) byDay[e.date] = [];
+      byDay[e.date].push(e);
+    });
+
+    var days = Object.keys(byDay).sort().reverse();
+    var html = '';
+    days.forEach(function(dk){
+      var dayEntries = byDay[dk];
+      var dayTotal = dayEntries.reduce(function(acc,e){ return acc + e.duration; }, 0);
+      var dLabel = new Date(dk+'T00:00:00').toLocaleDateString('it-IT', { weekday:'short', day:'numeric', month:'short' });
+      html += '<div class="daygroup"><div class="dayhead"><span>'+dLabel+'</span><span class="daytotal">'+formatDuration(dayTotal)+'</span></div>';
+      dayEntries.sort(function(a,b){ return new Date(a.start) - new Date(b.start); });
+      dayEntries.forEach(function(e){
+        html += '<div class="entry" onclick="__openModal(\''+e.id+'\')" style="cursor:pointer;">' +
+          '<span class="times">'+timeStr(new Date(e.start))+'<span class="arrow">→</span>'+timeStr(new Date(e.end))+'</span>' +
+          '<span class="dur">'+formatDuration(e.duration)+'</span>' +
+          '<button class="del" onclick="event.stopPropagation(); __deleteEntry(\''+e.id+'\')" aria-label="Elimina">×</button>' +
+          '</div>';
+      });
+      html += '</div>';
+    });
+
+    if(!html){ html = '<div class="empty">Nessuna registrazione in questo mese.</div>'; }
+    document.getElementById('monthDays').innerHTML = html;
+  }
+
+  function render(){
+    renderToday();
+    renderMonth();
+  }
+
+  document.getElementById('btnStart').addEventListener('click', startWork);
+  document.getElementById('btnEnd').addEventListener('click', endWork);
+  document.getElementById('addManualBtn').addEventListener('click', function(){ openEntryModal(null); });
+  document.getElementById('prevMonth').addEventListener('click', function(){
+    viewMonth--;
+    if(viewMonth < 0){ viewMonth = 11; viewYear--; }
+    renderMonth();
+  });
+  document.getElementById('nextMonth').addEventListener('click', function(){
+    viewMonth++;
+    if(viewMonth > 11){ viewMonth = 0; viewYear++; }
+    renderMonth();
+  });
+
+  (async function init(){
+    await loadData();
+    tickClock();
+    render();
+    setInterval(tickClock, 1000);
+
+    var params = new URLSearchParams(window.location.search);
+    var action = params.get('azione');
+    if(action === 'inizio' || action === 'fine'){
+      await handleQuickAction(action);
+      render();
+    }
+  })();
+})();
+</script>
+</body>
+</html>
