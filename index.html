@@ -4,6 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Cartellino — Orario di lavoro</title>
+<script>
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var azione = params.get('azione');
+  var icon = 'icon_app.png';
+  if(azione === 'inizio') icon = 'icon_start.png';
+  else if(azione === 'fine') icon = 'icon_end.png';
+  var link = document.createElement('link');
+  link.rel = 'apple-touch-icon';
+  link.href = icon;
+  document.head.appendChild(link);
+})();
+</script>
 <style>
   :root{
     --bg:#1B1A17;
@@ -620,3 +633,4 @@
 </script>
 </body>
 </html>
+
